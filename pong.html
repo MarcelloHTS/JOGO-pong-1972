@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Pong 1972</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      margin: auto;
+      background: black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="pong" width="800" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById("pong");
+    const ctx = canvas.getContext("2d");
+
+    // Criar objetos
+    const paddleWidth = 10, paddleHeight = 100;
+    const ballRadius = 10;
+
+    const player = {
+      x: 0,
+      y: canvas.height / 2 - paddleHeight / 2,
+      width: paddleWidth,
+      height: paddleHeight,
+      color: "white",
+      score: 0
+    };
+
+    const computer = {
+      x: canvas.width - paddleWidth,
+      y: canvas.height / 2 - paddleHeight / 2,
+      width: paddleWidth,
+      height: paddleHeight,
+      color: "white",
+      score: 0
+    };
+
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: ballRadius,
+      speed: 5,
+      velocityX: 5,
+      velocityY: 5,
+      color: "white"
+    };
+
+    // Desenhar retângulo
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    // Desenhar círculo
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2, false);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Desenhar texto
+    function drawText(text, x, y, color) {
+      ctx.fillStyle = color;
+      ctx.font = "45px Arial";
+      ctx.fillText(text, x, y);
+    }
+
+    // Resetar bola
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.velocityX = -ball.velocityX;
+      ball.speed = 5;
+    }
+
+    // Colisão
+    function collision(b, p) {
+      p.top = p.y;
+      p.bottom = p.y + p.height;
+      p.left = p.x;
+      p.right = p.x + p.width;
+
+      b.top = b.y - b.radius;
+      b.bottom = b.y + b.radius;
+      b.left = b.x - b.radius;
+      b.right = b.x + b.radius;
+
+      return (
+        b.right > p.left &&
+        b.bottom > p.top &&
+        b.left < p.right &&
+        b.top < p.bottom
+      );
+    }
+
+    // Atualizar
+    function update() {
+      ball.x += ball.velocityX;
+      ball.y += ball.velocityY;
+
+      // Rebate na parede superior/inferior
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.velocityY = -ball.velocityY;
+      }
+
+      // Movimento IA (simples)
+      computer.y += ((ball.y - (computer.y + computer.height / 2))) * 0.1;
+
+      // Colisão com jogador
+      let playerOrComputer = ball.x < canvas.width / 2 ? player : computer;
+      if (collision(ball, playerOrComputer)) {
+        let angle = 0;
+        let collidePoint = ball.y - (playerOrComputer.y + playerOrComputer.height / 2);
+        collidePoint = collidePoint / (playerOrComputer.height / 2);
+
+        angle = collidePoint * Math.PI / 4;
+
+        let direction = ball.x < canvas.width / 2 ? 1 : -1;
+        ball.velocityX = direction * ball.speed * Math.cos(angle);
+        ball.velocityY = ball.speed * Math.sin(angle);
+
+        ball.speed += 0.5;
+      }
+
+      // Ponto do oponente
+      if (ball.x - ball.radius < 0) {
+        computer.score++;
+        resetBall();
+      } else if (ball.x + ball.radius > canvas.width) {
+        player.score++;
+        resetBall();
+      }
+    }
+
+    // Desenhar
+    function render() {
+      drawRect(0, 0, canvas.width, canvas.height, "black");
+      drawText(player.score, canvas.width / 4, 50, "white");
+      drawText(computer.score, 3 * canvas.width / 4, 50, "white");
+      drawRect(player.x, player.y, player.width, player.height, player.color);
+      drawRect(computer.x, computer.y, computer.width, computer.height, computer.color);
+      drawCircle(ball.x, ball.y, ball.radius, ball.color);
+    }
+
+    // Loop do jogo
+    function game() {
+      update();
+      render();
+    }
+
+    // Controles
+    canvas.addEventListener("mousemove", (evt) => {
+      let rect = canvas.getBoundingClientRect();
+      player.y = evt.clientY - rect.top - player.height / 2;
+    });
+
+    // Iniciar
+    const fps = 60;
+    setInterval(game, 1000 / fps);
+  </script>
+</body>
+</html>
